@@ -4,15 +4,16 @@ pipeline {
     environment {
         LANG = 'en_US.UTF-8'
         LC_ALL = 'en_US.UTF-8'
-    }   // this has to be added only if you get an error saying UTF required is 8 but showing in ISO00009
+    }
 
     tools {
-        maven 'Maven'  // Ensure this matches the name configured in Jenkins
+        maven 'Maven'  // Ensure this matches the Maven name configured in Jenkins Global Tools
     }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/imsudeeppatil/ansible/.git'
+                git branch: 'master', url: 'https://github.com/imsudeeppatil/ansible.git'
             }
         }
 
@@ -22,19 +23,29 @@ pipeline {
             }
         }
 
-     stage('Archive') {
+        stage('Archive') {
             steps {
-                archiveArtifacts artifacts: 'target/*.war', fingerprint:true
+                archiveArtifacts artifacts: 'target/*.war', fingerprint: true
             }
         }
+
         stage('Deploy') {
             steps {
-               sh 'mvn clean package'  
-               sh 'ansible-playbook ansible/playbook.yml -i ansible/hosts.ini'
+                // Re-running build here is redundant if already built above
+                // You may remove the following line if not needed
+                // sh 'mvn clean package'
+                
+                sh 'ansible-playbook ansible/playbook.yml -i ansible/hosts.ini'
             }
         }
-
-                  
     }
 
-   }
+    post {
+        success {
+            echo 'Pipeline completed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
+        }
+    }
+}
